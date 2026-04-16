@@ -1,5 +1,6 @@
+import { useRef } from "react";
 import { Stack, usePathname } from "expo-router";
-import { View } from "react-native";
+import { View, PanResponder } from "react-native";
 import { StatusBar } from "expo-status-bar";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { ProfileProvider, useProfile } from "../src/state/profile";
@@ -10,20 +11,48 @@ import { ResumeProvider } from "../src/state/resume";
 import { PlayerProvider, usePlayer } from "../src/state/player";
 import { LibraryProvider } from "../src/state/library";
 import { ThemeProvider, useTheme } from "../src/theme/ThemeContext";
+import { SidebarProvider, useSidebar } from "../src/state/sidebar";
 import { MiniPlayer } from "../src/components/MiniPlayer";
+import { Sidebar } from "../src/components/Sidebar";
 import { useTrackPlayerSync } from "../src/hooks/useTrackPlayer";
+
+const EDGE_THRESHOLD = 40;
+const SWIPE_MIN_DISTANCE = 60;
 
 function AppContent() {
   const { current } = usePlayer();
   const { colors } = useTheme();
   const pathname = usePathname();
+  const { isOpen, open, close } = useSidebar();
 
   useTrackPlayerSync();
 
   const showMiniPlayer = current && pathname !== "/now-playing";
 
+  // Swipe from left edge to open sidebar.
+  const panResponder = useRef(
+    PanResponder.create({
+      onStartShouldSetPanResponder: (evt) => {
+        return !isOpen && evt.nativeEvent.pageX < EDGE_THRESHOLD;
+      },
+      onMoveShouldSetPanResponder: (evt, gestureState) => {
+        return (
+          !isOpen &&
+          evt.nativeEvent.pageX < EDGE_THRESHOLD + 30 &&
+          gestureState.dx > 10 &&
+          Math.abs(gestureState.dy) < Math.abs(gestureState.dx)
+        );
+      },
+      onPanResponderRelease: (_evt, gestureState) => {
+        if (gestureState.dx > SWIPE_MIN_DISTANCE) {
+          open();
+        }
+      },
+    }),
+  ).current;
+
   return (
-    <View style={{ flex: 1, backgroundColor: colors.bg }}>
+    <View style={{ flex: 1, backgroundColor: colors.bg }} {...panResponder.panHandlers}>
       <StatusBar style="light" />
       <Stack
         screenOptions={{
@@ -45,10 +74,11 @@ function AppContent() {
         />
       </Stack>
       {showMiniPlayer && (
-        <View style={{ position: "absolute", bottom: 56, left: 0, right: 0, zIndex: 10 }}>
+        <View style={{ position: "absolute", bottom: 64, left: 0, right: 0, zIndex: 10 }}>
           <MiniPlayer />
         </View>
       )}
+      <Sidebar visible={isOpen} onClose={close} />
     </View>
   );
 }
@@ -63,7 +93,9 @@ function ThemedStack() {
             <ResumeProvider>
               <PlayerProvider>
                 <LibraryProvider>
-                  <AppContent />
+                  <SidebarProvider>
+                    <AppContent />
+                  </SidebarProvider>
                 </LibraryProvider>
               </PlayerProvider>
             </ResumeProvider>

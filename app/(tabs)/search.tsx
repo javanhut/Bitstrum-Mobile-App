@@ -102,7 +102,6 @@ export default function SearchScreen() {
           placeholderTextColor={colors.fgDim}
           value={q}
           onChangeText={setQ}
-          autoFocus
         />
       </View>
 

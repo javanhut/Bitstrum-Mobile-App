@@ -89,6 +89,28 @@ export default function HomeScreen() {
           </View>
         </View>
 
+        {/* Liked Songs shortcut */}
+        {likedTracks.length > 0 && (
+          <Pressable
+            style={[styles.likedShortcut, { backgroundColor: colors.bgElev }]}
+            onPress={() => router.push("/liked-songs")}
+            android_ripple={{ color: "rgba(255,255,255,0.1)", borderless: false }}
+          >
+            <Text style={{ color: colors.accent, fontSize: 20 }}>{"\u2661"}</Text>
+            <View style={{ flex: 1 }}>
+              <Text style={{ color: colors.fg, fontWeight: "600", fontSize: 15 }}>Liked Songs</Text>
+              <Text style={{ color: colors.fgDim, fontSize: 13 }}>{likedTracks.length} song{likedTracks.length === 1 ? "" : "s"}</Text>
+            </View>
+            <Pressable
+              style={[styles.playShortcut, { backgroundColor: colors.accent }]}
+              onPress={() => { playQueue(likedTracks, 0); router.push("/now-playing"); }}
+              android_ripple={{ color: "rgba(255,255,255,0.3)", borderless: false, radius: 16 }}
+            >
+              <Text style={{ color: colors.accentFg, fontWeight: "700", fontSize: 12 }}>{"\u25B6"}</Text>
+            </Pressable>
+          </Pressable>
+        )}
+
         {quickPicks.length > 0 && (
           <View style={styles.section}>
             <Text style={[styles.kicker, { color: colors.accent }]}>Quick Picks</Text>
@@ -185,6 +207,8 @@ function Stat({ label, value, colors }: { label: string; value: number; colors: 
 const styles = StyleSheet.create({
   scroll: { flex: 1 },
   content: { padding: 20 },
+  likedShortcut: { flexDirection: "row", alignItems: "center", padding: 14, borderRadius: 12, gap: 14, marginBottom: 20, overflow: "hidden" },
+  playShortcut: { width: 32, height: 32, borderRadius: 16, justifyContent: "center", alignItems: "center", overflow: "hidden" },
   hero: { marginBottom: 28 },
   kicker: { fontSize: 12, fontWeight: "600", textTransform: "uppercase", letterSpacing: 1, marginBottom: 4 },
   greeting: { fontSize: 28, fontWeight: "700", marginBottom: 16 },

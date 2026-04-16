@@ -87,9 +87,6 @@ export default function ExploreScreen() {
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }}>
       <ScrollView contentContainerStyle={styles.content}>
-        <Pressable onPress={() => router.back()} style={styles.backBtn}>
-          <Text style={{ color: colors.accent }}>← Back</Text>
-        </Pressable>
         <Text style={[styles.kicker, { color: colors.accent }]}>Explore</Text>
         <Text style={[styles.title, { color: colors.fg }]}>Browse by mood, genre, and artist.</Text>
 

@@ -1,9 +1,11 @@
 import { Tabs } from "expo-router";
-import { Text, View } from "react-native";
+import { Pressable, Text, View } from "react-native";
 import { useTheme } from "../../src/theme/ThemeContext";
+import { useSidebar } from "../../src/state/sidebar";
 
 export default function TabLayout() {
   const { colors } = useTheme();
+  const { toggle } = useSidebar();
 
   return (
     <Tabs
@@ -13,9 +15,12 @@ export default function TabLayout() {
           backgroundColor: colors.bgElev,
           borderTopColor: colors.border,
           borderTopWidth: 1,
-          paddingTop: 4,
-          paddingBottom: 4,
-          height: 56,
+          height: 64,
+          justifyContent: "center",
+        },
+        tabBarItemStyle: {
+          paddingTop: 2,
+          paddingBottom: 16,
         },
         tabBarActiveTintColor: colors.accent,
         tabBarInactiveTintColor: colors.fgDim,
@@ -33,13 +38,6 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
-        name="library"
-        options={{
-          title: "Library",
-          tabBarIcon: ({ color }) => <TabIcon color={color} icon={"\u266B"} />,
-        }}
-      />
-      <Tabs.Screen
         name="search"
         options={{
           title: "Search",
@@ -47,24 +45,36 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
-        name="playlists"
+        name="explore"
         options={{
-          title: "Playlists",
-          tabBarIcon: ({ color }) => <TabIcon color={color} icon={"\u2263"} />,
+          title: "Explore",
+          tabBarIcon: ({ color }) => <TabIcon color={color} icon={"\u2726"} />,
         }}
       />
+      {/* Menu button opens the sidebar */}
       <Tabs.Screen
-        name="settings"
+        name="menu"
         options={{
-          title: "Settings",
-          tabBarIcon: ({ color }) => <TabIcon color={color} icon={"\u2699"} />,
+          title: "More",
+          tabBarIcon: ({ color }) => <TabIcon color={color} icon={"\u2630"} />,
+          tabBarButton: (props) => (
+            <Pressable
+              {...props}
+              onPress={(e) => {
+                e.preventDefault();
+                toggle();
+              }}
+            />
+          ),
         }}
       />
-      {/* Detail screens — tab bar stays visible */}
+      {/* Hidden screens — accessible via sidebar or navigation */}
+      <Tabs.Screen name="library" options={{ href: null }} />
+      <Tabs.Screen name="liked-songs" options={{ href: null }} />
+      <Tabs.Screen name="settings" options={{ href: null }} />
+      <Tabs.Screen name="playlists" options={{ href: null }} />
       <Tabs.Screen name="album/[id]" options={{ href: null }} />
       <Tabs.Screen name="playlist/[id]" options={{ href: null }} />
-      <Tabs.Screen name="explore" options={{ href: null }} />
-      <Tabs.Screen name="liked-songs" options={{ href: null }} />
       <Tabs.Screen name="collection/[kind]/[value]" options={{ href: null }} />
     </Tabs>
   );

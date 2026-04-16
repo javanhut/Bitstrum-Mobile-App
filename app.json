@@ -9,6 +9,7 @@
     "newArchEnabled": true,
     "android": {
       "package": "com.bitstrum.mobile",
+      "softwareKeyboardLayoutMode": "pan",
       "adaptiveIcon": {
         "backgroundColor": "#06101c"
       }
