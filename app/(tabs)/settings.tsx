@@ -21,14 +21,42 @@ export default function SettingsScreen() {
   const trimmedName = profile.displayName.trim();
 
   async function saveAndTest() {
-    setServerUrl(url.trim());
+    const trimmedUrl = url.trim().replace(/\/+$/, "");
+    setServerUrl(trimmedUrl);
     setServerPass(pass.trim());
     setStatus("Connecting...");
+
+    // Quick connectivity test before loading the full library.
+    try {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 8000);
+      const testUrl = `${trimmedUrl}/api/media?prefix=music/tracks/&limit=1`;
+      const headers: Record<string, string> = {};
+      if (pass.trim()) headers["X-Server-Pass"] = pass.trim();
+
+      const r = await fetch(testUrl, { headers, signal: controller.signal });
+      clearTimeout(timeout);
+
+      if (!r.ok) {
+        setStatus(`Error: Server returned ${r.status}`);
+        return;
+      }
+      setStatus("Connected! Loading library...");
+    } catch (e) {
+      if (e instanceof Error && e.name === "AbortError") {
+        setStatus("Error: Connection timed out. Check the URL and that your server is running.");
+      } else {
+        setStatus(`Error: ${e instanceof Error ? e.message : String(e)}`);
+      }
+      return;
+    }
+
+    // Now load the full library.
     try {
       await refresh();
       setStatus("Connected!");
     } catch (e) {
-      setStatus(`Error: ${e instanceof Error ? e.message : String(e)}`);
+      setStatus(`Error loading library: ${e instanceof Error ? e.message : String(e)}`);
     }
   }
 

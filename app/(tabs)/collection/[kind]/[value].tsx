@@ -4,12 +4,12 @@ import { Image } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { mediaUrl, type Album, type Track } from "../../../src/api/kaida";
-import { useTheme } from "../../../src/theme/ThemeContext";
-import { useLibrary } from "../../../src/state/library";
-import { usePlayer } from "../../../src/state/player";
-import { AlbumCard } from "../../../src/components/AlbumCard";
-import { TrackRow } from "../../../src/components/TrackRow";
+import { mediaUrl, type Album, type Track } from "../../../../src/api/kaida";
+import { useTheme } from "../../../../src/theme/ThemeContext";
+import { useLibrary } from "../../../../src/state/library";
+import { usePlayer } from "../../../../src/state/player";
+import { AlbumCard } from "../../../../src/components/AlbumCard";
+import { TrackRow } from "../../../../src/components/TrackRow";
 
 const ALPHA_OPTS: Intl.CollatorOptions = { sensitivity: "base", numeric: true };
 

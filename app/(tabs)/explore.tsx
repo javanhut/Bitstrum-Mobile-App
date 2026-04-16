@@ -3,10 +3,10 @@ import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-
 import { Image } from "expo-image";
 import { useRouter } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { fuzzyScore, mediaUrl, type Track } from "../src/api/kaida";
-import { useTheme } from "../src/theme/ThemeContext";
-import { useLibrary } from "../src/state/library";
-import { usePlayer } from "../src/state/player";
+import { fuzzyScore, mediaUrl, type Track } from "../../src/api/kaida";
+import { useTheme } from "../../src/theme/ThemeContext";
+import { useLibrary } from "../../src/state/library";
+import { usePlayer } from "../../src/state/player";
 
 type Group = { id: string; label: string; tracks: Track[]; coverKey: string };
 

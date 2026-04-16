@@ -4,12 +4,12 @@ import { Image } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { mediaUrl } from "../../src/api/kaida";
-import { useTheme } from "../../src/theme/ThemeContext";
-import { useLibrary } from "../../src/state/library";
-import { usePlayer } from "../../src/state/player";
-import { useSavedAlbums } from "../../src/state/savedAlbums";
-import { TrackRow } from "../../src/components/TrackRow";
+import { mediaUrl } from "../../../src/api/kaida";
+import { useTheme } from "../../../src/theme/ThemeContext";
+import { useLibrary } from "../../../src/state/library";
+import { usePlayer } from "../../../src/state/player";
+import { useSavedAlbums } from "../../../src/state/savedAlbums";
+import { TrackRow } from "../../../src/components/TrackRow";
 
 export default function AlbumScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();

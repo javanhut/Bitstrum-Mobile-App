@@ -4,12 +4,12 @@ import { Image } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { mediaUrl, type Track } from "../src/api/kaida";
-import { useTheme } from "../src/theme/ThemeContext";
-import { useLibrary } from "../src/state/library";
-import { useLikes } from "../src/state/likes";
-import { usePlayer } from "../src/state/player";
-import { TrackRow } from "../src/components/TrackRow";
+import { mediaUrl, type Track } from "../../src/api/kaida";
+import { useTheme } from "../../src/theme/ThemeContext";
+import { useLibrary } from "../../src/state/library";
+import { useLikes } from "../../src/state/likes";
+import { usePlayer } from "../../src/state/player";
+import { TrackRow } from "../../src/components/TrackRow";
 
 function fmt(total: number): string {
   const h = Math.floor(total / 3600);

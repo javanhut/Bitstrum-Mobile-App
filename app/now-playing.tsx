@@ -80,21 +80,23 @@ export default function NowPlayingScreen() {
         </View>
 
         <View style={styles.controls}>
-          <Pressable onPress={toggleShuffle} style={styles.ctrlBtn}>
-            <Text style={{ color: state.shuffle ? colors.accent : colors.fgDim, fontSize: 20 }}>⤮</Text>
+          <Pressable onPress={toggleShuffle} style={[styles.ctrlBtn, { overflow: "hidden", borderRadius: 20 }]} android_ripple={{ color: "rgba(255,255,255,0.15)", borderless: false, radius: 20 }}>
+            <Text style={{ color: state.shuffle ? colors.accent : colors.fgDim, fontSize: 16, fontWeight: "700" }}>SHF</Text>
           </Pressable>
-          <Pressable onPress={prev} style={styles.ctrlBtn}>
-            <Text style={{ color: colors.fg, fontSize: 28 }}>⏮</Text>
+          <Pressable onPress={prev} style={[styles.ctrlBtn, { overflow: "hidden", borderRadius: 24 }]} android_ripple={{ color: "rgba(255,255,255,0.15)", borderless: false, radius: 24 }}>
+            <Text style={{ color: colors.fg, fontSize: 22, fontWeight: "700" }}>{"\u25C0\u25C0"}</Text>
           </Pressable>
-          <Pressable onPress={toggle} style={[styles.playBtn, { backgroundColor: colors.accent }]}>
-            <Text style={{ color: colors.accentFg, fontSize: 28 }}>{state.isPlaying ? "⏸" : "▶"}</Text>
+          <Pressable onPress={toggle} style={[styles.playBtn, { backgroundColor: colors.accent, overflow: "hidden" }]} android_ripple={{ color: "rgba(255,255,255,0.3)", borderless: false, radius: 32 }}>
+            <Text style={{ color: colors.accentFg, fontSize: 22, fontWeight: "700" }}>
+              {state.isPlaying ? "| |" : "\u25B6"}
+            </Text>
           </Pressable>
-          <Pressable onPress={next} style={styles.ctrlBtn}>
-            <Text style={{ color: colors.fg, fontSize: 28 }}>⏭</Text>
+          <Pressable onPress={next} style={[styles.ctrlBtn, { overflow: "hidden", borderRadius: 24 }]} android_ripple={{ color: "rgba(255,255,255,0.15)", borderless: false, radius: 24 }}>
+            <Text style={{ color: colors.fg, fontSize: 22, fontWeight: "700" }}>{"\u25B6\u25B6"}</Text>
           </Pressable>
-          <Pressable onPress={cycleRepeat} style={styles.ctrlBtn}>
-            <Text style={{ color: state.repeat !== "off" ? colors.accent : colors.fgDim, fontSize: 18 }}>
-              {state.repeat === "one" ? "🔂" : "🔁"}
+          <Pressable onPress={cycleRepeat} style={[styles.ctrlBtn, { overflow: "hidden", borderRadius: 20 }]} android_ripple={{ color: "rgba(255,255,255,0.15)", borderless: false, radius: 20 }}>
+            <Text style={{ color: state.repeat !== "off" ? colors.accent : colors.fgDim, fontSize: 16, fontWeight: "700" }}>
+              {state.repeat === "one" ? "R1" : "RPT"}
             </Text>
           </Pressable>
         </View>

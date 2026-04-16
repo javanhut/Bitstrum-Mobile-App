@@ -44,9 +44,14 @@ export function MiniPlayer() {
             {current.artist}
           </Text>
         </View>
-        <Pressable onPress={toggle} style={styles.playBtn} hitSlop={12}>
-          <Text style={{ color: colors.fg, fontSize: 24 }}>
-            {state.isPlaying ? "⏸" : "▶"}
+        <Pressable
+          onPress={toggle}
+          style={{ backgroundColor: colors.accent, borderRadius: 18, width: 36, height: 36, justifyContent: "center", alignItems: "center", overflow: "hidden" }}
+          android_ripple={{ color: "rgba(255,255,255,0.3)", borderless: false, radius: 18 }}
+          hitSlop={12}
+        >
+          <Text style={{ color: colors.accentFg, fontSize: 14, fontWeight: "700" }}>
+            {state.isPlaying ? "| |" : " \u25B6"}
           </Text>
         </Pressable>
       </Pressable>
