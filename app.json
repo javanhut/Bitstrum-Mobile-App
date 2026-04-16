@@ -1,0 +1,20 @@
+{
+  "expo": {
+    "name": "Bitstrum",
+    "slug": "bitstrum-mobile",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "scheme": "bitstrum",
+    "userInterfaceStyle": "dark",
+    "newArchEnabled": true,
+    "android": {
+      "package": "com.bitstrum.mobile",
+      "adaptiveIcon": {
+        "backgroundColor": "#06101c"
+      }
+    },
+    "plugins": [
+      "expo-router"
+    ]
+  }
+}
