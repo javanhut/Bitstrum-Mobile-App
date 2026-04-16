@@ -61,11 +61,7 @@ export default function SettingsScreen() {
     // Now load the full library.
     try {
       await refresh();
-      if (tracks.length === 0) {
-        setStatus("Connected but no tracks found. Upload music via the web app.");
-      } else {
-        setStatus(`Connected! ${tracks.length} tracks loaded.`);
-      }
+      setStatus("Connected!");
     } catch (e) {
       setStatus(`Error loading library: ${e instanceof Error ? e.message : String(e)}`);
     }
