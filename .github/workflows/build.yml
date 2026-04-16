@@ -23,10 +23,14 @@ jobs:
           distribution: temurin
           java-version: 17
 
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 20
+          cache: npm
 
       - name: Install dependencies
         run: npm install
@@ -44,75 +48,25 @@ jobs:
           key: gradle-${{ hashFiles('android/gradle/wrapper/gradle-wrapper.properties', 'android/app/build.gradle') }}
           restore-keys: gradle-
 
-      - name: Build release APK
+      - name: Build debug APK
         working-directory: android
-        run: ./gradlew assembleRelease -x lint -x test --no-daemon
+        run: ./gradlew assembleDebug -x lint -x test --no-daemon -Dorg.gradle.jvmargs="-Xmx4g"
 
       - name: Rename APK
         run: |
           VERSION="${GITHUB_REF_NAME}"
-          mv android/app/build/outputs/apk/release/app-release.apk \
-             android/app/build/outputs/apk/release/bitstrum-mobile-${VERSION}.apk
+          mv android/app/build/outputs/apk/debug/app-debug.apk \
+             bitstrum-mobile-${VERSION}.apk
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:
           name: android-apk
-          path: android/app/build/outputs/apk/release/bitstrum-mobile-*.apk
-
-  ios:
-    name: Build iOS App
-    runs-on: macos-latest
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 20
-
-      - name: Install dependencies
-        run: npm install
-
-      - name: Generate native project
-        run: npx expo prebuild --platform ios --no-install
-
-      - name: Install CocoaPods
-        working-directory: ios
-        run: pod install
-
-      - name: Build unsigned .app
-        working-directory: ios
-        run: |
-          xcodebuild \
-            -workspace Bitstrum.xcworkspace \
-            -scheme Bitstrum \
-            -configuration Release \
-            -sdk iphonesimulator \
-            -derivedDataPath build \
-            -arch arm64 \
-            CODE_SIGNING_ALLOWED=NO \
-            CODE_SIGNING_REQUIRED=NO \
-            CODE_SIGN_IDENTITY="" \
-            | tail -20
-
-      - name: Package .app into zip
-        run: |
-          VERSION="${GITHUB_REF_NAME}"
-          cd ios/build/Build/Products/Release-iphonesimulator
-          zip -r "../../../../../bitstrum-mobile-ios-simulator-${VERSION}.zip" Bitstrum.app
-
-      - name: Upload iOS artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: ios-simulator-app
-          path: bitstrum-mobile-ios-simulator-*.zip
+          path: bitstrum-mobile-*.apk
 
   release:
     name: Create GitHub Release
-    needs: [android, ios]
+    needs: [android]
     runs-on: ubuntu-latest
 
     steps:
@@ -120,12 +74,6 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: android-apk
-          path: artifacts/
-
-      - name: Download iOS app
-        uses: actions/download-artifact@v4
-        with:
-          name: ios-simulator-app
           path: artifacts/
 
       - name: Create release
