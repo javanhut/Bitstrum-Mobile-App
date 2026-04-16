@@ -25,11 +25,11 @@ function AppContent() {
   const pathname = usePathname();
   const { isOpen, open, close } = useSidebar();
 
+  // Sets up the audio player. Does NOT cause re-renders on status updates.
   useTrackPlayerSync();
 
   const showMiniPlayer = current && pathname !== "/now-playing";
 
-  // Swipe from left edge to open sidebar.
   const panResponder = useRef(
     PanResponder.create({
       onStartShouldSetPanResponder: (evt) => {

@@ -7,6 +7,7 @@ import { useResume } from "../state/resume";
 let audioConfigured = false;
 
 // Shared progress state so useProgress() can read from any component.
+let sharedSound: Audio.Sound | null = null;
 let progressListeners: Set<() => void> = new Set();
 let sharedPosition = 0;
 let sharedDuration = 0;
@@ -33,8 +34,7 @@ export function useTrackPlayerSync() {
   const { state, current, setPlaying, ended } = usePlayer();
   const { updatePosition, clearPosition } = useResume();
 
-  // Use refs for values accessed inside the status callback to avoid
-  // stale closures. The callback is attached once per sound instance.
+  // Refs to avoid stale closures in the status callback.
   const currentRef = useRef(current);
   const endedRef = useRef(ended);
   const clearPositionRef = useRef(clearPosition);
@@ -44,7 +44,6 @@ export function useTrackPlayerSync() {
   clearPositionRef.current = clearPosition;
   updatePositionRef.current = updatePosition;
 
-  const soundRef = useRef<Audio.Sound | null>(null);
   const lastKey = useRef<string | null>(null);
   const lastSeekNonce = useRef<number>(0);
   const lastSaveTick = useRef<number>(0);
@@ -54,9 +53,9 @@ export function useTrackPlayerSync() {
   useEffect(() => {
     configureAudio();
     return () => {
-      if (soundRef.current) {
-        soundRef.current.unloadAsync();
-        soundRef.current = null;
+      if (sharedSound) {
+        sharedSound.unloadAsync();
+        sharedSound = null;
       }
     };
   }, []);
@@ -89,9 +88,9 @@ export function useTrackPlayerSync() {
   // Load new track when current changes.
   useEffect(() => {
     if (!current) {
-      if (soundRef.current) {
-        soundRef.current.unloadAsync();
-        soundRef.current = null;
+      if (sharedSound) {
+        sharedSound.unloadAsync();
+        sharedSound = null;
       }
       lastKey.current = null;
       loadingKey.current = null;
@@ -108,9 +107,9 @@ export function useTrackPlayerSync() {
 
     (async () => {
       // Unload previous sound.
-      if (soundRef.current) {
-        await soundRef.current.unloadAsync();
-        soundRef.current = null;
+      if (sharedSound) {
+        await sharedSound.unloadAsync();
+        sharedSound = null;
       }
 
       sharedPosition = 0;
@@ -135,7 +134,7 @@ export function useTrackPlayerSync() {
           return;
         }
 
-        soundRef.current = sound;
+        sharedSound = sound;
       } catch (e) {
         console.warn("Failed to load audio:", e);
       }
@@ -144,31 +143,31 @@ export function useTrackPlayerSync() {
 
   // Sync play/pause.
   useEffect(() => {
-    if (!soundRef.current || !current) return;
+    if (!sharedSound || !current) return;
     if (state.isPlaying) {
-      soundRef.current.playAsync().catch(() => setPlaying(false));
+      sharedSound.playAsync().catch(() => setPlaying(false));
     } else {
-      soundRef.current.pauseAsync().catch(() => {});
+      sharedSound.pauseAsync().catch(() => {});
     }
   }, [state.isPlaying]);
 
   // Sync volume.
   useEffect(() => {
-    if (!soundRef.current) return;
-    soundRef.current.setVolumeAsync(state.volume).catch(() => {});
+    if (!sharedSound) return;
+    sharedSound.setVolumeAsync(state.volume).catch(() => {});
   }, [state.volume]);
 
   // Sync seek requests.
   useEffect(() => {
-    if (!soundRef.current || !state.seekRequest) return;
+    if (!sharedSound || !state.seekRequest) return;
     if (state.seekRequest.nonce === lastSeekNonce.current) return;
     lastSeekNonce.current = state.seekRequest.nonce;
-    soundRef.current.setPositionAsync(state.seekRequest.t * 1000).catch(() => {});
+    sharedSound.setPositionAsync(state.seekRequest.t * 1000).catch(() => {});
     if (current) updatePosition(current.key, state.seekRequest.t);
   }, [state.seekRequest]);
 }
 
-export function useProgress(_intervalMs = 200) {
+export function useProgress() {
   const [, forceUpdate] = useState(0);
 
   useEffect(() => {

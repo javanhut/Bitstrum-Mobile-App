@@ -10,7 +10,7 @@ export function MiniPlayer() {
   const { state, current, toggle, openNowPlaying } = usePlayer();
   const { colors } = useTheme();
   const router = useRouter();
-  const { position, duration } = useProgress(200);
+  const { position, duration } = useProgress();
 
   if (!current) return null;
 

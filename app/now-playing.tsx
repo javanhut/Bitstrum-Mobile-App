@@ -19,7 +19,7 @@ export default function NowPlayingScreen() {
   const { colors } = useTheme();
   const { state, current, toggle, next, prev, seek, toggleShuffle, cycleRepeat } = usePlayer();
   const router = useRouter();
-  const { position, duration } = useProgress(250);
+  const { position, duration } = useProgress();
 
   if (!current) {
     return (

@@ -57,13 +57,10 @@ export default function TabLayout() {
         options={{
           title: "More",
           tabBarIcon: ({ color }) => <TabIcon color={color} icon={"\u2630"} />,
-          tabBarButton: (props) => (
+          tabBarButton: (props: any) => (
             <Pressable
               {...props}
-              onPress={(e) => {
-                e.preventDefault();
-                toggle();
-              }}
+              onPress={() => toggle()}
             />
           ),
         }}
