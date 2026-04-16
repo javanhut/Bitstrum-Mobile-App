@@ -41,6 +41,13 @@ export default function SettingsScreen() {
         setStatus(`Error: Server returned ${r.status}`);
         return;
       }
+
+      const data = await r.json() as { items?: unknown[] };
+      if (!data.items || data.items.length === 0) {
+        setStatus("Error: Server is reachable but has no music. Upload tracks via the web app first.");
+        return;
+      }
+
       setStatus("Connected! Loading library...");
     } catch (e) {
       if (e instanceof Error && e.name === "AbortError") {
@@ -54,7 +61,11 @@ export default function SettingsScreen() {
     // Now load the full library.
     try {
       await refresh();
-      setStatus("Connected!");
+      if (tracks.length === 0) {
+        setStatus("Connected but no tracks found. Upload music via the web app.");
+      } else {
+        setStatus(`Connected! ${tracks.length} tracks loaded.`);
+      }
     } catch (e) {
       setStatus(`Error loading library: ${e instanceof Error ? e.message : String(e)}`);
     }

@@ -79,18 +79,24 @@ export function mediaHeaders(): Record<string, string> {
 export async function listTrackKeys(): Promise<string[]> {
   const all: string[] = [];
   let cursor = "";
+  const url = apiUrl(`/media?prefix=${TRACK_PREFIX}&limit=200`);
+  console.log("[kaida] listTrackKeys fetching:", url);
   for (let i = 0; i < 50; i++) {
     const params = new URLSearchParams({ prefix: TRACK_PREFIX, limit: "200" });
     if (cursor) params.set("cursor", cursor);
-    const r = await fetch(apiUrl(`/media?${params.toString()}`), {
+    const fetchUrl = apiUrl(`/media?${params.toString()}`);
+    const r = await fetch(fetchUrl, {
       headers: authHeaders(),
     });
+    console.log("[kaida] list response:", r.status, "url:", fetchUrl);
     if (!r.ok) throw new Error(`list failed: ${r.status}`);
     const data = (await r.json()) as ListResponse;
+    console.log("[kaida] got", data.items.length, "items, cursor:", data.next_cursor);
     for (const item of data.items) all.push(item.key);
     if (!data.next_cursor) break;
     cursor = data.next_cursor;
   }
+  console.log("[kaida] total track keys:", all.length);
   return all;
 }
 

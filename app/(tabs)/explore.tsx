@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
+import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import { Image } from "expo-image";
 import { useRouter } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -40,7 +40,7 @@ function filterGroups(groups: Group[], q: string): Group[] {
 
 export default function ExploreScreen() {
   const { colors } = useTheme();
-  const { tracks } = useLibrary();
+  const { tracks, loading, refresh } = useLibrary();
   const { playQueue } = usePlayer();
   const router = useRouter();
   const [filter, setFilter] = useState("");
@@ -86,7 +86,10 @@ export default function ExploreScreen() {
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }}>
-      <ScrollView contentContainerStyle={styles.content}>
+      <ScrollView
+        contentContainerStyle={styles.content}
+        refreshControl={<RefreshControl refreshing={loading} onRefresh={refresh} colors={[colors.accent]} progressBackgroundColor={colors.bgElev} />}
+      >
         <Text style={[styles.kicker, { color: colors.accent }]}>Explore</Text>
         <Text style={[styles.title, { color: colors.fg }]}>Browse by mood, genre, and artist.</Text>
 

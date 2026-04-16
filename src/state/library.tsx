@@ -27,7 +27,9 @@ export function LibraryProvider({ children }: { children: ReactNode }) {
   const [error, setError] = useState<string | null>(null);
 
   const refresh = useCallback(async () => {
-    if (!isConfigured()) {
+    const configured = isConfigured();
+    console.log("[library] refresh called, isConfigured:", configured);
+    if (!configured) {
       setLoading(false);
       setError("Server not configured");
       return;
@@ -36,9 +38,11 @@ export function LibraryProvider({ children }: { children: ReactNode }) {
     setError(null);
     try {
       const t = await loadLibrary();
+      console.log("[library] loaded", t.length, "tracks");
       setTracks(t);
       setAlbums(groupAlbums(t));
     } catch (e) {
+      console.log("[library] error:", e);
       setError(e instanceof Error ? e.message : String(e));
     } finally {
       setLoading(false);

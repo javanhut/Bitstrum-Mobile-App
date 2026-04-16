@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { FlatList, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { FlatList, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
 import { Image } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
@@ -24,7 +24,7 @@ function greetingFor(): string {
 
 export default function HomeScreen() {
   const { colors } = useTheme();
-  const { tracks, albums } = useLibrary();
+  const { tracks, albums, loading, refresh } = useLibrary();
   const { profile } = useProfile();
   const { playlists } = usePlaylists();
   const { order: savedAlbumIds } = useSavedAlbums();
@@ -75,7 +75,19 @@ export default function HomeScreen() {
         start={{ x: 0.5, y: 0 }}
         end={{ x: 0.5, y: 0.4 }}
       />
-      <ScrollView style={styles.scroll} contentContainerStyle={styles.content}>
+      <ScrollView
+        style={styles.scroll}
+        contentContainerStyle={styles.content}
+        refreshControl={
+          <RefreshControl
+            refreshing={loading}
+            onRefresh={refresh}
+            tintColor={colors.accent}
+            colors={[colors.accent]}
+            progressBackgroundColor={colors.bgElev}
+          />
+        }
+      >
         <View style={styles.hero}>
           <Text style={[styles.kicker, { color: colors.accent }]}>Home</Text>
           <Text style={[styles.greeting, { color: colors.fg }]}>

@@ -7,10 +7,12 @@
     "scheme": "bitstrum",
     "userInterfaceStyle": "dark",
     "newArchEnabled": true,
+    "icon": "./assets/bitstrum_logo.png",
     "android": {
       "package": "com.bitstrum.mobile",
       "softwareKeyboardLayoutMode": "pan",
       "adaptiveIcon": {
+        "foregroundImage": "./assets/bitstrum_logo.png",
         "backgroundColor": "#06101c"
       }
     },

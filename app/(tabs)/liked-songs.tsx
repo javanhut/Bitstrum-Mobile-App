@@ -54,7 +54,7 @@ export default function LikedSongsScreen() {
               {previewCover ? (
                 <Image source={{ uri: mediaUrl(previewCover) }} style={styles.coverImg} contentFit="cover" />
               ) : (
-                <Text style={{ color: colors.fgDim, fontSize: 36 }}>♥</Text>
+                <Text style={{ color: colors.fgDim, fontSize: 36 }}>{"\u2661"}</Text>
               )}
             </View>
             <Text style={[styles.kicker, { color: colors.accent }]}>Liked Songs</Text>
@@ -75,7 +75,7 @@ export default function LikedSongsScreen() {
         ListEmptyComponent={
           loaded ? (
             <View style={styles.empty}>
-              <Text style={{ color: colors.fgDim, fontSize: 32 }}>♥</Text>
+              <Text style={{ color: colors.fgDim, fontSize: 32 }}>{"\u2661"}</Text>
               <Text style={{ color: colors.fgDim }}>No liked songs yet. Use the heart icon on any track.</Text>
             </View>
           ) : (

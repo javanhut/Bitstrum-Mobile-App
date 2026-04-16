@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { FlatList, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
+import { FlatList, Pressable, RefreshControl, StyleSheet, Text, TextInput, View } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -83,6 +83,7 @@ export default function LibraryScreen() {
           numColumns={2}
           contentContainerStyle={styles.grid}
           columnWrapperStyle={styles.gridRow}
+          refreshControl={<RefreshControl refreshing={loading} onRefresh={refresh} colors={[colors.accent]} progressBackgroundColor={colors.bgElev} />}
           renderItem={({ item }) => (
             <AlbumCard
               album={item}
@@ -96,6 +97,7 @@ export default function LibraryScreen() {
         <FlatList
           data={filteredTracks}
           keyExtractor={(item) => item.key}
+          refreshControl={<RefreshControl refreshing={loading} onRefresh={refresh} colors={[colors.accent]} progressBackgroundColor={colors.bgElev} />}
           renderItem={({ item, index }) => (
             <TrackRow
               track={item}
