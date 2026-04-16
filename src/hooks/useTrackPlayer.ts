@@ -1,40 +1,63 @@
-import { useEffect, useRef, useState } from "react";
-import { Audio, type AVPlaybackStatus } from "expo-av";
+import { useEffect, useRef } from "react";
+import TrackPlayer, {
+  AppKilledPlaybackBehavior,
+  Capability,
+  Event,
+  RepeatMode,
+  useProgress as useRntpProgress,
+  useTrackPlayerEvents,
+} from "react-native-track-player";
 import { mediaUrl, mediaHeaders } from "../api/kaida";
 import { usePlayer } from "../state/player";
 import { useResume } from "../state/resume";
+import { remoteEvents } from "../services/remoteEvents";
 
-let audioConfigured = false;
+let setupPromise: Promise<void> | null = null;
 
-// Shared progress state so useProgress() can read from any component.
-let sharedSound: Audio.Sound | null = null;
-let progressListeners: Set<() => void> = new Set();
-let sharedPosition = 0;
-let sharedDuration = 0;
-
-function notifyProgress() {
-  for (const fn of progressListeners) fn();
-}
-
-async function configureAudio() {
-  if (audioConfigured) return;
-  try {
-    await Audio.setAudioModeAsync({
-      playsInSilentModeIOS: true,
-      staysActiveInBackground: true,
-      shouldDuckAndroid: true,
-    });
-    audioConfigured = true;
-  } catch (e) {
-    console.warn("Audio mode config failed:", e);
-  }
+function configurePlayer(): Promise<void> {
+  if (setupPromise) return setupPromise;
+  setupPromise = (async () => {
+    try {
+      await TrackPlayer.setupPlayer();
+    } catch (e) {
+      // setupPlayer throws if already initialized — treat as success.
+      const msg = String((e as { message?: string })?.message ?? e);
+      if (!msg.includes("already")) {
+        console.warn("TrackPlayer setup failed:", e);
+      }
+    }
+    try {
+      await TrackPlayer.updateOptions({
+        android: {
+          appKilledPlaybackBehavior:
+            AppKilledPlaybackBehavior.StopPlaybackAndRemoveNotification,
+        },
+        capabilities: [
+          Capability.Play,
+          Capability.Pause,
+          Capability.SkipToNext,
+          Capability.SkipToPrevious,
+          Capability.SeekTo,
+          Capability.Stop,
+        ],
+        compactCapabilities: [
+          Capability.Play,
+          Capability.Pause,
+          Capability.SkipToNext,
+        ],
+        progressUpdateEventInterval: 2,
+      });
+    } catch (e) {
+      console.warn("TrackPlayer updateOptions failed:", e);
+    }
+  })();
+  return setupPromise;
 }
 
 export function useTrackPlayerSync() {
-  const { state, current, setPlaying, ended } = usePlayer();
-  const { updatePosition, clearPosition } = useResume();
+  const { state, current, setPlaying, next, prev, seek, ended } = usePlayer();
+  const { getPosition, updatePosition, clearPosition } = useResume();
 
-  // Refs to avoid stale closures in the status callback.
   const currentRef = useRef(current);
   const endedRef = useRef(ended);
   const clearPositionRef = useRef(clearPosition);
@@ -46,57 +69,55 @@ export function useTrackPlayerSync() {
 
   const lastKey = useRef<string | null>(null);
   const lastSeekNonce = useRef<number>(0);
-  const lastSaveTick = useRef<number>(0);
   const loadingKey = useRef<string | null>(null);
 
-  // Configure audio on mount.
   useEffect(() => {
-    configureAudio();
+    configurePlayer();
     return () => {
-      if (sharedSound) {
-        sharedSound.unloadAsync();
-        sharedSound = null;
-      }
+      TrackPlayer.reset().catch(() => {});
     };
   }, []);
 
-  // Status callback — uses refs so it never goes stale.
-  function onStatus(status: AVPlaybackStatus) {
-    if (!status.isLoaded) return;
+  // All effects below await `configurePlayer()` to avoid racing setup.
 
-    sharedPosition = (status.positionMillis ?? 0) / 1000;
-    sharedDuration = (status.durationMillis ?? 0) / 1000;
-    notifyProgress();
+  // Remote control events from the lock-screen / notification.
+  useEffect(() => {
+    const unsubs = [
+      remoteEvents.on("play", () => {
+        if (currentRef.current) setPlaying(true);
+      }),
+      remoteEvents.on("pause", () => setPlaying(false)),
+      remoteEvents.on("next", () => next()),
+      remoteEvents.on("prev", () => prev()),
+      remoteEvents.on("seek", (pos) => seek(pos)),
+      remoteEvents.on("stop", () => setPlaying(false)),
+    ];
+    return () => unsubs.forEach((u) => u());
+  }, [setPlaying, next, prev, seek]);
 
-    // Persist resume position every 2s.
-    const cur = currentRef.current;
-    if (cur && status.positionMillis != null) {
-      const now = Date.now();
-      if (now - lastSaveTick.current > 2000) {
-        lastSaveTick.current = now;
-        updatePositionRef.current(cur.key, status.positionMillis / 1000);
+  // Queue end (natural finish) + periodic progress persistence.
+  useTrackPlayerEvents(
+    [Event.PlaybackQueueEnded, Event.PlaybackProgressUpdated, Event.PlaybackError],
+    async (event) => {
+      if (event.type === Event.PlaybackQueueEnded) {
+        const cur = currentRef.current;
+        if (cur) clearPositionRef.current(cur.key);
+        endedRef.current();
+      } else if (event.type === Event.PlaybackProgressUpdated) {
+        const cur = currentRef.current;
+        if (cur) updatePositionRef.current(cur.key, event.position);
+      } else if (event.type === Event.PlaybackError) {
+        console.warn("TrackPlayer error:", event);
       }
-    }
+    },
+  );
 
-    // Song finished — advance queue.
-    if (status.didJustFinish) {
-      if (cur) clearPositionRef.current(cur.key);
-      endedRef.current();
-    }
-  }
-
-  // Load new track when current changes.
+  // Load new track when `current` changes.
   useEffect(() => {
     if (!current) {
-      if (sharedSound) {
-        sharedSound.unloadAsync();
-        sharedSound = null;
-      }
+      TrackPlayer.reset().catch(() => {});
       lastKey.current = null;
       loadingKey.current = null;
-      sharedPosition = 0;
-      sharedDuration = 0;
-      notifyProgress();
       return;
     }
 
@@ -106,77 +127,80 @@ export function useTrackPlayerSync() {
     loadingKey.current = key;
 
     (async () => {
-      // Unload previous sound.
-      if (sharedSound) {
-        await sharedSound.unloadAsync();
-        sharedSound = null;
-      }
-
-      sharedPosition = 0;
-      sharedDuration = current.duration || 0;
-      notifyProgress();
-
       try {
-        const headers = mediaHeaders();
-        const { sound } = await Audio.Sound.createAsync(
-          { uri: mediaUrl(key), headers },
-          {
-            shouldPlay: true,
-            volume: state.volume,
-            progressUpdateIntervalMillis: 250,
-          },
-          onStatus,
-        );
+        await configurePlayer();
+        if (loadingKey.current !== key) return;
+        await TrackPlayer.reset();
+        await TrackPlayer.add({
+          id: key,
+          url: mediaUrl(key),
+          headers: mediaHeaders(),
+          title: current.title,
+          artist: current.artist,
+          album: current.album,
+          duration: current.duration,
+          artwork: current.coverKey ? mediaUrl(current.coverKey) : undefined,
+        });
 
-        // Check we haven't moved to a different track while loading.
-        if (loadingKey.current !== key) {
-          await sound.unloadAsync();
-          return;
+        if (loadingKey.current !== key) return;
+
+        const resumePos = getPosition(key);
+        if (resumePos > 0) {
+          await TrackPlayer.seekTo(resumePos);
         }
 
-        sharedSound = sound;
+        await TrackPlayer.setVolume(state.volume);
+
+        if (state.isPlaying) {
+          await TrackPlayer.play();
+        }
       } catch (e) {
-        console.warn("Failed to load audio:", e);
+        console.warn("Failed to load track:", e);
       }
     })();
   }, [current?.key]);
 
   // Sync play/pause.
   useEffect(() => {
-    if (!sharedSound || !current) return;
-    if (state.isPlaying) {
-      sharedSound.playAsync().catch(() => setPlaying(false));
-    } else {
-      sharedSound.pauseAsync().catch(() => {});
-    }
+    if (!current) return;
+    configurePlayer().then(() => {
+      if (state.isPlaying) {
+        TrackPlayer.play().catch(() => setPlaying(false));
+      } else {
+        TrackPlayer.pause().catch(() => {});
+      }
+    });
   }, [state.isPlaying]);
 
   // Sync volume.
   useEffect(() => {
-    if (!sharedSound) return;
-    sharedSound.setVolumeAsync(state.volume).catch(() => {});
+    configurePlayer().then(() =>
+      TrackPlayer.setVolume(state.volume).catch(() => {}),
+    );
   }, [state.volume]);
 
-  // Sync seek requests.
+  // In-app scrubber → RNTP seek.
   useEffect(() => {
-    if (!sharedSound || !state.seekRequest) return;
+    if (!state.seekRequest) return;
     if (state.seekRequest.nonce === lastSeekNonce.current) return;
     lastSeekNonce.current = state.seekRequest.nonce;
-    sharedSound.setPositionAsync(state.seekRequest.t * 1000).catch(() => {});
-    if (current) updatePosition(current.key, state.seekRequest.t);
+    const t = state.seekRequest.t;
+    configurePlayer().then(() => TrackPlayer.seekTo(t).catch(() => {}));
+    if (current) updatePosition(current.key, t);
   }, [state.seekRequest]);
+
+  // Mirror repeat mode so repeat-one loops natively and lock-screen agrees.
+  useEffect(() => {
+    const mode =
+      state.repeat === "one"
+        ? RepeatMode.Track
+        : state.repeat === "all"
+          ? RepeatMode.Queue
+          : RepeatMode.Off;
+    configurePlayer().then(() => TrackPlayer.setRepeatMode(mode).catch(() => {}));
+  }, [state.repeat]);
 }
 
 export function useProgress() {
-  const [, forceUpdate] = useState(0);
-
-  useEffect(() => {
-    const listener = () => forceUpdate((n) => n + 1);
-    progressListeners.add(listener);
-    return () => {
-      progressListeners.delete(listener);
-    };
-  }, []);
-
-  return { position: sharedPosition, duration: sharedDuration };
+  return useRntpProgress(250);
 }

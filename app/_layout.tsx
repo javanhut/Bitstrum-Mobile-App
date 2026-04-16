@@ -1,7 +1,8 @@
-import { useRef } from "react";
+import { useEffect, useRef } from "react";
 import { Stack, usePathname } from "expo-router";
 import { View, PanResponder } from "react-native";
 import { StatusBar } from "expo-status-bar";
+import * as NavigationBar from "expo-navigation-bar";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { ProfileProvider, useProfile } from "../src/state/profile";
 import { LikesProvider } from "../src/state/likes";
@@ -53,7 +54,7 @@ function AppContent() {
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.bg }} {...panResponder.panHandlers}>
-      <StatusBar style="light" />
+      <StatusBar style="light" hidden />
       <Stack
         screenOptions={{
           headerShown: false,
@@ -107,6 +108,11 @@ function ThemedStack() {
 }
 
 export default function RootLayout() {
+  useEffect(() => {
+    NavigationBar.setVisibilityAsync("hidden").catch(() => {});
+    NavigationBar.setBehaviorAsync("overlay-swipe").catch(() => {});
+  }, []);
+
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <ProfileProvider>
