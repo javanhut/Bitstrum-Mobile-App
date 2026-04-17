@@ -27,6 +27,8 @@ function configurePlayer(): Promise<void> {
       }
     }
     try {
+      // Cast: `compactCapabilities` still works at runtime but was dropped
+      // from UpdateOptions types in 5.0.0-alpha0.
       await TrackPlayer.updateOptions({
         android: {
           appKilledPlaybackBehavior:
@@ -46,7 +48,7 @@ function configurePlayer(): Promise<void> {
           Capability.SkipToNext,
         ],
         progressUpdateEventInterval: 2,
-      });
+      } as Parameters<typeof TrackPlayer.updateOptions>[0]);
     } catch (e) {
       console.warn("TrackPlayer updateOptions failed:", e);
     }

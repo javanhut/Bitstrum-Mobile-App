@@ -1,0 +1,17 @@
+[test]
+preload = ["./src/__tests__/setup.ts"]
+coverageSkipTestFiles = true
+coverageReporter = ["text", "lcov"]
+coveragePathIgnorePatterns = [
+  "**/app/**",
+  "**/android/**",
+  "**/src/components/**",
+  "**/src/hooks/**",
+  "**/src/state/**",
+  "**/src/services/trackPlayerService.ts",
+  "**/src/theme/ThemeContext.tsx",
+  "**/__tests__/**",
+  "**/*.test.ts",
+  "**/*.test.tsx",
+]
+coverageThreshold = { line = 0.8, function = 0.8, statement = 0.8 }
