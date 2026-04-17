@@ -5,15 +5,6 @@ on:
     tags:
       - "v*"
   workflow_dispatch:
-    inputs:
-      build_type:
-        description: "Build type"
-        required: true
-        default: "release"
-        type: choice
-        options:
-          - debug
-          - release
 
 permissions:
   contents: write
@@ -67,8 +58,6 @@ jobs:
     name: Build Android APK
     needs: [verify]
     runs-on: ubuntu-latest
-    env:
-      BUILD_TYPE: ${{ github.event_name == 'workflow_dispatch' && inputs.build_type || 'debug' }}
 
     steps:
       - name: Checkout
@@ -99,65 +88,6 @@ jobs:
       - name: Generate native project
         run: bunx expo prebuild --platform android --no-install
 
-      - name: Enable JS bundle in debug APK
-        if: env.BUILD_TYPE == 'debug'
-        run: |
-          if ! grep -q '^react {$' android/app/build.gradle; then
-            echo "::error::react { ... } block not found in android/app/build.gradle"
-            exit 1
-          fi
-          sed -i '/^react {$/a\    bundleInDebug = true' android/app/build.gradle
-
-      - name: Configure release signing
-        if: env.BUILD_TYPE == 'release'
-        env:
-          KEYSTORE_B64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
-        run: |
-          if [ -z "$KEYSTORE_B64" ]; then
-            echo "::error::ANDROID_KEYSTORE_BASE64 secret is not set"
-            exit 1
-          fi
-          echo "$KEYSTORE_B64" | base64 -d > android/app/release.keystore
-          python3 - <<'PY'
-          from pathlib import Path
-          p = Path("android/app/build.gradle")
-          src = p.read_text()
-          marker = (
-              "    signingConfigs {\n"
-              "        debug {\n"
-              "            storeFile file('debug.keystore')\n"
-              "            storePassword 'android'\n"
-              "            keyAlias 'androiddebugkey'\n"
-              "            keyPassword 'android'\n"
-              "        }\n"
-          )
-          release_block = (
-              "        release {\n"
-              "            storeFile file('release.keystore')\n"
-              "            storePassword System.getenv(\"ANDROID_KEYSTORE_PASSWORD\")\n"
-              "            keyAlias System.getenv(\"ANDROID_KEY_ALIAS\")\n"
-              "            keyPassword System.getenv(\"ANDROID_KEY_PASSWORD\")\n"
-              "        }\n"
-          )
-          if marker not in src:
-              raise SystemExit("signingConfigs block did not match expected shape — prebuild output may have changed")
-          src = src.replace(marker, marker + release_block, 1)
-          old = (
-              "        release {\n"
-              "            // Caution! In production, you need to generate your own keystore file.\n"
-              "            // see https://reactnative.dev/docs/signed-apk-android.\n"
-              "            signingConfig signingConfigs.debug"
-          )
-          new = (
-              "        release {\n"
-              "            signingConfig signingConfigs.release"
-          )
-          if old not in src:
-              raise SystemExit("buildTypes.release signingConfig line did not match expected shape")
-          src = src.replace(old, new, 1)
-          p.write_text(src)
-          PY
-
       - name: Cache Gradle
         uses: actions/cache@v4
         with:
@@ -170,37 +100,17 @@ jobs:
 
       - name: Build APK
         working-directory: android
-        env:
-          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
-          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
-          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
-        run: |
-          if [ "$BUILD_TYPE" = "release" ]; then
-            ./gradlew assembleRelease -x lint -x test --no-daemon -Dorg.gradle.jvmargs="-Xmx4g"
-          else
-            ./gradlew assembleDebug -x lint -x test --no-daemon -Dorg.gradle.jvmargs="-Xmx4g"
-          fi
+        run: ./gradlew assembleRelease -x lint -x test --no-daemon -Dorg.gradle.jvmargs="-Xmx4g"
 
       - name: Rename APK
         run: |
-          if [ "$BUILD_TYPE" = "release" ]; then
-            SRC="android/app/build/outputs/apk/release/app-release.apk"
-            if [ "${GITHUB_REF_TYPE}" = "tag" ]; then
-              DEST="bitstrum-mobile-${GITHUB_REF_NAME}-release.apk"
-            else
-              VERSION=$(jq -r '.expo.version' app.json)
-              SHORT_SHA="${GITHUB_SHA::7}"
-              DEST="bitstrum-mobile-${VERSION}-${SHORT_SHA}-release.apk"
-            fi
+          SRC="android/app/build/outputs/apk/release/app-release.apk"
+          if [ "${GITHUB_REF_TYPE}" = "tag" ]; then
+            DEST="bitstrum-mobile-${GITHUB_REF_NAME}.apk"
           else
-            SRC="android/app/build/outputs/apk/debug/app-debug.apk"
-            if [ "${GITHUB_REF_TYPE}" = "tag" ]; then
-              DEST="bitstrum-mobile-${GITHUB_REF_NAME}.apk"
-            else
-              VERSION=$(jq -r '.expo.version' app.json)
-              SHORT_SHA="${GITHUB_SHA::7}"
-              DEST="bitstrum-mobile-${VERSION}-${SHORT_SHA}-debug.apk"
-            fi
+            VERSION=$(jq -r '.expo.version' app.json)
+            SHORT_SHA="${GITHUB_SHA::7}"
+            DEST="bitstrum-mobile-${VERSION}-${SHORT_SHA}.apk"
           fi
           mv "$SRC" "$DEST"
           echo "APK_NAME=$DEST" >> "$GITHUB_ENV"
